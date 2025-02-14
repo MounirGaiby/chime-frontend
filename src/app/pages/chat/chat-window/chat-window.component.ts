@@ -45,6 +45,9 @@ import { Renderer2 } from '@angular/core';
     MatTooltipModule,
     TextFieldModule,
   ],
+  host: {
+    '[class.sidebar-closed]': '!sidebarOpen'
+  },
   template: `
     @if (!conversation) {
     <div class="empty-state">
@@ -56,11 +59,20 @@ import { Renderer2 } from '@angular/core';
       <div #messagesContainer class="messages" [class.has-reasoning]="currentReasoningContent">
         @for (chat of conversation.chats; track chat.id) {
         <div class="message-group">
-          <div
-            class="message user"
-            [innerHTML]="sanitizeHtml(markdownToHtml(chat.message))"
-          ></div>
+          <div class="message user">
+            <div class="message-header">
+              <button mat-icon-button class="copy-message-button" (click)="copyMessage(chat.message)">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </div>
+            <div [innerHTML]="sanitizeHtml(markdownToHtml(chat.message))"></div>
+          </div>
           <div class="message ai">
+            <div class="message-header">
+              <button mat-icon-button class="copy-message-button" (click)="copyMessage(chat.response)">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </div>
             @if (chat.reasoning_content) {
             <button
               mat-button
@@ -106,7 +118,7 @@ import { Renderer2 } from '@angular/core';
       </div>
       <div class="input-area">
         <div class="model-selector">
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Select Model</mat-label>
             <mat-select [(ngModel)]="selectedModel" [disabled]="isTyping">
               @for (model of modelArray; track model.id) {
@@ -123,8 +135,9 @@ import { Renderer2 } from '@angular/core';
             </mat-select>
           </mat-form-field>
         </div>
+        
         <mat-form-field class="message-input" appearance="outline">
-          <mat-label>Type your message (Markdown supported)...</mat-label>
+          <mat-label>Type your message...</mat-label>
           <textarea
             matInput
             [(ngModel)]="newMessage"
@@ -132,88 +145,281 @@ import { Renderer2 } from '@angular/core';
             cdkTextareaAutosize
             cdkAutosizeMinRows="1"
             cdkAutosizeMaxRows="5"
-            (keydown.shift.enter)="sendMessage()"
-            (keydown.enter)="$event.preventDefault()"
-            placeholder="Use **bold**, *italic*, \`code\`, or \`\`\`codeblock\`\`\`"
+            (keydown)="onKeyDown($event)"
+            placeholder="Type your message..."
           ></textarea>
-          <mat-hint>Shift+Enter to send</mat-hint>
+          <mat-hint>Enter to send, Shift+Enter for new line</mat-hint>
         </mat-form-field>
-        @if (selectedModel && getSelectedModel()?.supports_files) {
-        <button mat-icon-button (click)="fileInput.click()">
-          <mat-icon>attach_file</mat-icon>
-        </button>
-        <input
-          #fileInput
-          type="file"
-          hidden
-          (change)="onFileSelected($event)"
-        />
-        }
-        <button
-          mat-icon-button
-          (click)="sendMessage()"
-          [disabled]="!newMessage.trim() || isTyping"
-        >
-          <mat-icon>send</mat-icon>
-        </button>
+
+        <div class="action-buttons">
+          @if (selectedModel && getSelectedModel()?.supports_files) {
+            <button mat-icon-button class="action-button" (click)="fileInput.click()">
+              <mat-icon>attach_file</mat-icon>
+            </button>
+            <input
+              #fileInput
+              type="file"
+              hidden
+              (change)="onFileSelected($event)"
+            />
+          }
+          <button
+            mat-icon-button
+            class="action-button send-button"
+            (click)="sendMessage()"
+            [disabled]="!newMessage.trim() || isTyping"
+          >
+            <mat-icon>send</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
     }
   `,
   styles: [
     `
+      :host {
+        display: block;
+        height: 100%;
+        padding: 0 !important;
+        box-sizing: border-box;
+        width: 100%;
+        overflow: hidden;
+        
+        &.sidebar-closed {
+          padding-left: 0 !important;
+        }
+      }
+
       .chat-container {
         display: flex;
         flex-direction: column;
         height: 100%;
+        width: 100%;
+        background: rgba(26, 28, 30, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 0;
+        overflow: hidden;
       }
 
       .messages {
         flex: 1;
+        padding: 24px;
+        color: rgba(255, 255, 255, 0.9);
         overflow-y: auto;
-        padding: 20px;
-      }
-
-      .message.ai {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .show-reasoning {
-        align-self: flex-start;
-        color: var(--text-secondary);
-        padding: 4px 8px;
+        overflow-x: hidden;
+        min-height: 0;
         
-        mat-icon {
-          margin-right: 8px;
-          font-size: 18px;
-          vertical-align: text-bottom;
+        &::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
         }
       }
 
-      .reasoning-content {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: #f8f9fa;
-        border-left: 4px solid #6366f1;
-        border-radius: 4px;
-        padding: 12px 16px;
-        margin: 8px 0;
-        line-height: 1.6;
-        color: #4b5563;
-        font-size: 0.95em;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      .message-group {
+        margin-bottom: 24px;
+
+        .timestamp {
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 0.8rem;
+          margin: 4px 0;
+          text-align: center;
+        }
+      }
+
+      .message {
+        position: relative;
+        max-width: 85%;
+        padding: 16px;
+        border-radius: 16px;
+        margin-bottom: 8px;
+        line-height: 1.5;
+        font-size: 1rem;
+        backdrop-filter: blur(10px);
+        
+        &.user {
+          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          color: #f0f0ff;
+          margin-left: auto;
+          border-bottom-right-radius: 4px;
+          box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3),
+                      0 0 15px rgba(124, 58, 237, 0.2);
+          border: 1px solid rgba(124, 58, 237, 0.3);
+
+          pre, code {
+            background: rgba(0, 0, 0, 0.3) !important;
+            color: #e0e7ff;
+            text-shadow: 0 0 8px rgba(124, 58, 237, 0.3);
+          }
+        }
+        
+        &.ai {
+          background: rgba(17, 24, 39, 0.95);
+          color: #4ade80;
+          border-bottom-left-radius: 4px;
+          border: 1px solid rgba(74, 222, 128, 0.2);
+          box-shadow: 0 4px 15px rgba(74, 222, 128, 0.1),
+                      0 0 10px rgba(74, 222, 128, 0.05);
+          text-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
+
+          pre, code {
+            background: rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+          }
+        }
+
+        pre {
+          margin: 8px 0;
+          padding: 12px;
+          border-radius: 8px;
+          overflow-x: auto;
+          font-family: 'Fira Code', monospace;
+        }
+
+        code {
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-family: 'Fira Code', monospace;
+        }
+
+        .message-header {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+
+        &:hover .message-header {
+          opacity: 1;
+        }
+
+        .copy-message-button {
+          width: 32px;
+          height: 32px;
+          line-height: 32px;
+          background: rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(4px);
+          border-radius: 16px;
+          
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            opacity: 0.8;
+          }
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.3);
+            mat-icon {
+              opacity: 1;
+            }
+          }
+        }
       }
 
       .input-area {
+        flex-shrink: 0;
         padding: 20px;
+        background: rgba(26, 28, 30, 0.95);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
         display: flex;
-        gap: 10px;
-        align-items: center;
+        gap: 16px;
+        align-items: flex-start;
+        container-type: inline-size;
+        flex-wrap: wrap;
+      }
+
+      .model-selector {
+        min-width: 150px;
+        max-width: 200px;
+        flex-shrink: 1;
+        
+        @container (max-width: 600px) {
+          width: 100%;
+          max-width: 100%;
+          order: -1;
+        }
       }
 
       .message-input {
         flex: 1;
+        min-width: 200px;
+        
+        @container (max-width: 600px) {
+          min-width: 0;
+          width: 100%;
+        }
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        margin-bottom: 8px;
+        
+        @container (max-width: 600px) {
+          margin-left: auto;
+        }
+      }
+
+      .action-button {
+        margin-top: 8px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        color: rgba(255, 255, 255, 0.9);
+        transition: all 0.3s ease;
+
+        &:hover:not([disabled]) {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+          transform: translateY(-1px);
+        }
+
+        &[disabled] {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0;
+        }
+      }
+
+      .send-button {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        border: none;
+        
+        &:hover:not([disabled]) {
+          box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3),
+                      0 0 20px rgba(124, 58, 237, 0.2);
+        }
+        
+        &[disabled] {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
       }
 
       .empty-state {
@@ -222,37 +428,145 @@ import { Renderer2 } from '@angular/core';
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: #666;
+        color: rgba(255, 255, 255, 0.5);
+        text-align: center;
+        padding: 2rem;
+        min-height: 400px; // Add minimum height for empty state
+
+        h2 {
+          font-size: 1.5rem;
+          margin-bottom: 1rem;
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        p {
+          color: rgba(255, 255, 255, 0.6);
+          max-width: 400px;
+          line-height: 1.6;
+        }
       }
 
-      .message-group {
-        margin-bottom: 20px;
+      .show-reasoning {
+        background: rgba(17, 24, 39, 0.95);
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        border-radius: 8px;
+        padding: 8px 16px;
+        color: #4ade80;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        margin-top: 8px;
+        text-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
+        box-shadow: 0 2px 10px rgba(74, 222, 128, 0.1);
+
+        &:hover {
+          background: rgba(17, 24, 39, 0.98);
+          border-color: rgba(74, 222, 128, 0.4);
+          box-shadow: 0 4px 15px rgba(74, 222, 128, 0.15);
+          transform: translateY(-1px);
+        }
+
+        mat-icon {
+          font-size: 18px;
+          color: #4ade80;
+        }
       }
 
-      .model-selector {
-        min-width: 150px;
+      .reasoning-content {
+        background: rgba(17, 24, 39, 0.95);
+        border-left: 4px solid #4ade80;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 12px 0;
+        color: #4ade80;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        line-height: 1.6;
+        font-size: 0.95em;
+        text-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        box-shadow: 0 4px 15px rgba(74, 222, 128, 0.1);
       }
 
       .typing {
+        color: #4ade80;
+        text-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
+        
         &::after {
           content: '▋';
           animation: blink 1s step-start infinite;
+          color: #4ade80;
         }
       }
 
       @keyframes blink {
-        50% {
-          opacity: 0;
+        50% { opacity: 0; }
+      }
+
+      @media (max-width: 768px) {
+        :host {
+          padding: 0;
+          
+          &.sidebar-closed {
+            padding-left: 0;
+          }
+        }
+
+        .chat-container {
+          margin: 0;
+          border-radius: 0;
+        }
+
+        .input-area {
+          padding: 8px;
+          gap: 8px;
         }
       }
 
-      .message.ai .response :global(.error-message) {
-        color: #dc2626;
-        background-color: #fef2f2;
-        border-left: 4px solid #dc2626;
-        padding: 12px 16px;
-        border-radius: 4px;
-        margin: 8px 0;
+      @media (max-width: 480px) {
+        :host {
+          padding: 0;
+          
+          &.sidebar-closed {
+            padding-left: 0;
+          }
+        }
+
+        .chat-container {
+          border-radius: 0;
+        }
+
+        .messages {
+          padding: 8px;
+        }
+
+        .input-area {
+          padding: 8px;
+        }
+      }
+
+      // Add these styles for better dark mode support
+      ::ng-deep {
+        blockquote {
+          border-left: 4px solid #7c3aed;
+          background: rgba(124, 58, 237, 0.1);
+          margin: 8px 0;
+          padding: 12px 16px;
+          color: #f0f0ff;
+          border-radius: 0 8px 8px 0;
+        }
+
+        a {
+          color: #4ade80;
+          text-decoration: none;
+          text-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
+          
+          &:hover {
+            text-decoration: underline;
+            color: #22c55e;
+          }
+        }
       }
     `,
   ],
@@ -286,6 +600,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   selectedReasoningChatId: number | null = null;
   private destroy$ = new Subject<void>();
   private scrollTimeout: any = null;
+
+  // Add input for sidebar state
+  @Input() sidebarOpen = true;
 
   constructor(
     private chatService: ChatService,
@@ -430,7 +747,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
       this.messageSent.emit({
         message: this.newMessage,
         model: this.selectedModel,
-        attachments: this.selectedFile ? [this.selectedFile] : undefined,
+        attachments: this.selectedFile ? [this.selectedFile] : undefined
       });
       this.newMessage = '';
       this.selectedFile = null;
@@ -541,5 +858,26 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
       this.scrollToBottom();
     }
     this.clearState();
+  }
+
+  onKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      // If Shift key is not pressed and Enter is pressed
+      if (!event.shiftKey) {
+        event.preventDefault(); // Prevent default newline
+        if (this.newMessage.trim() && !this.isTyping) {
+          this.sendMessage();
+        }
+      }
+    }
+  }
+
+  copyMessage(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      // Optional: Show a brief notification or change the icon temporarily
+      console.log('Text copied');
+    }).catch(err => {
+      console.error('Failed to copy text:', err);
+    });
   }
 }

@@ -19,15 +19,54 @@ $theme: mat.m2-define-light-theme((
   density: 0,
 ));
 
-// Apply the theme
-@include mat.all-component-themes($theme);
+// Create dark theme
+$dark-theme: mat.m2-define-dark-theme((
+  color: (
+    primary: $primary,
+    accent: $accent,
+    warn: $warn,
+  )
+));
+
+// Apply dark theme by default
+@include mat.all-component-themes($dark-theme);
+
+// Define CSS custom properties for both themes
+:root {
+  color-scheme: dark;
+  // Light theme colors
+  --background: #ffffff;
+  --surface: #ffffff;
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --border-color: rgba(0, 0, 0, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme {
+  // Dark theme colors
+  --background: #1a1c1e;
+  --surface: #29323c;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --border-color: rgba(255, 255, 255, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
 
 // Global styles
 html, body {
   height: 100%;
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #1a1c1e 0%, #29323c 100%);
+  color: white;
+  overflow: hidden; // Prevent body scrolling
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #1a1c1e 0%, #29323c 100%);
+  color: white;
 }
 
 .container {
@@ -132,6 +171,31 @@ html, body {
 // Material overrides
 .mat-mdc-form-field {
   width: 100%;
+  .mdc-text-field--filled {
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .mat-mdc-form-field-focus-overlay {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .mdc-floating-label, .mdc-text-field__input {
+    color: rgba(255, 255, 255, 0.87) !important;
+  }
+
+  .mdc-line-ripple::before {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &.mat-mdc-form-field-type-mat-input,
+  &.mat-mdc-form-field-type-mat-select {
+    --mdc-filled-text-field-container-color: transparent;
+    --mdc-filled-text-field-focus-active-indicator-color: var(--border-color);
+    --mdc-filled-text-field-hover-active-indicator-color: var(--border-color);
+    --mdc-filled-text-field-focus-label-text-color: var(--text-secondary);
+    --mdc-filled-text-field-label-text-color: var(--text-secondary);
+    --mdc-filled-text-field-input-text-color: var(--text-primary);
+  }
 }
 
 .mat-mdc-button {
@@ -146,7 +210,25 @@ html, body {
 // Modern scrollbar for the entire app
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px; // For horizontal scrollbars
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+  }
 }
 
 .message {
@@ -188,5 +270,35 @@ html, body {
       border-left-color: rgba(255, 255, 255, 0.3);
       color: rgba(255, 255, 255, 0.9);
     }
+  }
+}
+
+// Fix for Material select dropdowns in dark mode
+.mat-mdc-select-panel {
+  background: rgba(26, 28, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+
+  .mat-mdc-option {
+    color: rgba(255, 255, 255, 0.9) !important;
+
+    &:hover:not(.mdc-list-item--disabled) {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    &.mdc-list-item--selected {
+      background: rgba(52, 152, 219, 0.2) !important;
+    }
+  }
+}
+
+// Fix for Material dialog in dark mode
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-color: rgba(26, 28, 30, 0.95) !important;
+  backdrop-filter: blur(10px);
+  
+  .mat-mdc-dialog-surface {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px !important;
   }
 }

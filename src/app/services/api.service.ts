@@ -79,7 +79,6 @@ export class ApiService {
           if (line.startsWith('data: ') && !processedLines.has(line)) {
             try {
               const jsonStr = line.substring(6);
-              console.log('Processing new SSE line:', jsonStr);
               
               processedLines.add(line); // Mark this line as processed
               const response = JSON.parse(jsonStr) as SSEResponse;
@@ -97,14 +96,13 @@ export class ApiService {
       
       // Convert errors into fake successful responses
       const handleError = (errorMessage: string) => {
-        // Send an error message as if it was a normal response
         const errorResponse: SSEResponse = {
-          content: `⚠️ **Error**: ${errorMessage}\n\n*Please try again later or contact support if the issue persists.*`,
+          content: `🚫 \`Error\`: ${errorMessage}\n\n*System malfunction. Please retry or contact support.*`,
           done: true,
           chat: {
             id: Date.now(),
             message: message,
-            response: `⚠️ **Error**: ${errorMessage}\n\n*Please try again later or contact support if the issue persists.*`,
+            response: `🚫 \`Error\`: ${errorMessage}\n\n*System malfunction. Please retry or contact support.*`,
             model: model,
             tokens_used: 0,
             temperature: 0.7
