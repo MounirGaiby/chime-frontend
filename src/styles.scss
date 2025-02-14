@@ -1,1 +1,192 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+// Include the common styles for Angular Material
+@include mat.core();
+
+// Define the theme colors
+$primary: mat.m2-define-palette(mat.$m2-indigo-palette);
+$accent: mat.m2-define-palette(mat.$m2-pink-palette, A200, A100, A400);
+$warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+// Create the theme
+$theme: mat.m2-define-light-theme((
+  color: (
+    primary: $primary,
+    accent: $accent,
+    warn: $warn,
+  ),
+  typography: mat.m2-define-typography-config(),
+  density: 0,
+));
+
+// Apply the theme
+@include mat.all-component-themes($theme);
+
+// Global styles
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  overflow: hidden;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.text-center {
+  text-align: center;
+}
+
+// Margin utilities
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.mt-4 { margin-top: 1.5rem; }
+.mt-5 { margin-top: 2rem; }
+
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mb-4 { margin-bottom: 1.5rem; }
+.mb-5 { margin-bottom: 2rem; }
+
+// Modern color scheme
+:root {
+  --primary-color: #2196F3;
+  --secondary-color: #FF4081;
+  --background-color: #F5F5F5;
+  --surface-color: #FFFFFF;
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --border-color: rgba(0, 0, 0, 0.12);
+}
+
+// Chat window styles
+.chat-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-color);
+  
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 3px;
+    }
+  }
+
+  .message-group {
+    margin-bottom: 1.5rem;
+    
+    .message {
+      max-width: 80%;
+      padding: 1rem;
+      border-radius: 1rem;
+      margin-bottom: 0.5rem;
+      
+      &.user {
+        background-color: var(--primary-color);
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 0.25rem;
+      }
+      
+      &.ai {
+        background-color: var(--surface-color);
+        color: var(--text-primary);
+        border-bottom-left-radius: 0.25rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+
+  .input-area {
+    padding: 1rem;
+    background-color: var(--surface-color);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+}
+
+// Material overrides
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+.mat-mdc-button {
+  border-radius: 1.5rem;
+}
+
+.mat-drawer {
+  border-right: 1px solid var(--border-color);
+  background-color: var(--surface-color);
+}
+
+// Modern scrollbar for the entire app
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.message {
+  &.user, &.ai {
+    pre {
+      margin: 0.5em 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9em;
+    }
+    
+    p:first-child {
+      margin-top: 0;
+    }
+    
+    p:last-child {
+      margin-bottom: 0;
+    }
+    
+    ul, ol {
+      margin: 0.5em 0;
+      padding-left: 1.5em;
+    }
+    
+    blockquote {
+      margin: 0.5em 0;
+      padding-left: 1em;
+      border-left: 3px solid rgba(0, 0, 0, 0.2);
+      color: rgba(0, 0, 0, 0.7);
+    }
+  }
+  
+  &.user {
+    blockquote {
+      border-left-color: rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+}

@@ -32,6 +32,7 @@
               }
             ],
             "styles": [
+              "node_modules/highlight.js/styles/github.css",
               "src/styles.scss"
             ],
             "scripts": [],
@@ -39,7 +40,14 @@
             "outputMode": "server",
             "ssr": {
               "entry": "src/server.ts"
-            }
+            },
+            "allowedCommonJsDependencies": ["dotenv"],
+            "fileReplacements": [
+              {
+                "replace": "src/environments/environment.ts",
+                "with": "src/environments/environment.development.ts"
+              }
+            ]
           },
           "configurations": {
             "production": {

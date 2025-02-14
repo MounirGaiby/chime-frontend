@@ -40,3 +40,12 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+
+# API DOCS
+docs.md
+
+# Environment variables
+.env
+.env.local
+.env.*.local
