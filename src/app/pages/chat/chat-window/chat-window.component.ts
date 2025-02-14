@@ -30,6 +30,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import hljs from 'highlight.js';
 import { Renderer2 } from '@angular/core';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { ClipboardModule } from '@angular/cdk/clipboard';
 
 @Component({
   selector: 'app-chat-window',
@@ -44,6 +46,7 @@ import { Renderer2 } from '@angular/core';
     MatSelectModule,
     MatTooltipModule,
     TextFieldModule,
+    ClipboardModule,
   ],
   host: {
     '[class.sidebar-closed]': '!sidebarOpen'
@@ -60,39 +63,38 @@ import { Renderer2 } from '@angular/core';
         @for (chat of conversation.chats; track chat.id) {
         <div class="message-group">
           <div class="message user">
-            <div class="message-header">
-              <button mat-icon-button class="copy-message-button" (click)="copyMessage(chat.message)">
+            <div class="message-content">
+              <div [innerHTML]="sanitizeHtml(markdownToHtml(chat.message))"></div>
+              <button mat-icon-button class="copy-button" (click)="copyMessage(chat.message)" matTooltip="Copy message">
                 <mat-icon>content_copy</mat-icon>
               </button>
             </div>
-            <div [innerHTML]="sanitizeHtml(markdownToHtml(chat.message))"></div>
           </div>
           <div class="message ai">
-            <div class="message-header">
-              <button mat-icon-button class="copy-message-button" (click)="copyMessage(chat.response)">
+            @if (chat.reasoning_content) {
+              <button
+                mat-button
+                class="show-reasoning"
+                (click)="showReasoning(chat.id)"
+              >
+                <mat-icon>psychology</mat-icon>
+                {{ chat.id === selectedReasoningChatId ? 'Hide Reasoning' : 'Show Reasoning' }}
+              </button>
+            }
+            @if (chat.id === selectedReasoningChatId && chat.reasoning_content) {
+              <div class="reasoning-content">
+                <div [innerHTML]="sanitizeHtml(markdownToHtml(chat.reasoning_content || ''))"></div>
+                <button mat-icon-button class="copy-button" (click)="copyMessage(chat.reasoning_content || '')" matTooltip="Copy reasoning">
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+              </div>
+            }
+            <div class="response">
+              <div [innerHTML]="sanitizeHtml(markdownToHtml(chat.response))"></div>
+              <button mat-icon-button class="copy-button" (click)="copyMessage(chat.response)" matTooltip="Copy response">
                 <mat-icon>content_copy</mat-icon>
               </button>
             </div>
-            @if (chat.reasoning_content) {
-            <button
-              mat-button
-              class="show-reasoning"
-              (click)="showReasoning(chat.id)"
-            >
-              <mat-icon>psychology</mat-icon>
-              {{ chat.id === selectedReasoningChatId ? 'Hide Reasoning' : 'Show Reasoning' }}
-            </button>
-            }
-            @if (chat.id === selectedReasoningChatId && chat.reasoning_content) {
-            <div
-              class="reasoning-content"
-              [innerHTML]="sanitizeHtml(markdownToHtml(chat.reasoning_content || ''))"
-            ></div>
-            }
-            <div
-              class="response"
-              [innerHTML]="sanitizeHtml(markdownToHtml(chat.response))"
-            ></div>
           </div>
         </div>
         } @if (pendingMessage) {
@@ -236,7 +238,6 @@ import { Renderer2 } from '@angular/core';
       }
 
       .message {
-        position: relative;
         max-width: 85%;
         padding: 16px;
         border-radius: 16px;
@@ -291,36 +292,35 @@ import { Renderer2 } from '@angular/core';
           font-family: 'Fira Code', monospace;
         }
 
-        .message-header {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          opacity: 0;
-          transition: opacity 0.2s ease;
-        }
+        &.user, &.ai {
+          position: relative;
 
-        &:hover .message-header {
-          opacity: 1;
-        }
+          .copy-button {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            scale: 0.8;
+            z-index: 1;
 
-        .copy-message-button {
-          width: 32px;
-          height: 32px;
-          line-height: 32px;
-          background: rgba(0, 0, 0, 0.2);
-          backdrop-filter: blur(4px);
-          border-radius: 16px;
-          
-          mat-icon {
-            font-size: 16px;
-            width: 16px;
-            height: 16px;
-            opacity: 0.8;
+            &:hover {
+              background: rgba(0, 0, 0, 0.3);
+            }
+
+            mat-icon {
+              color: rgba(255, 255, 255, 0.8);
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+              line-height: 18px;
+            }
           }
 
           &:hover {
-            background: rgba(0, 0, 0, 0.3);
-            mat-icon {
+            .copy-button {
               opacity: 1;
             }
           }
@@ -607,7 +607,8 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   constructor(
     private chatService: ChatService,
     private sanitizer: DomSanitizer,
-    private renderer: Renderer2
+    private renderer: Renderer2,
+    private clipboard: Clipboard
   ) {}
 
   get modelArray(): AIModel[] {
@@ -873,11 +874,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   }
 
   copyMessage(text: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      // Optional: Show a brief notification or change the icon temporarily
-      console.log('Text copied');
-    }).catch(err => {
-      console.error('Failed to copy text:', err);
-    });
+    this.clipboard.copy(text);
   }
 }
